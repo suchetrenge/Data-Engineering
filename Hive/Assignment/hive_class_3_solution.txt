@@ -104,7 +104,7 @@ b. Find a product for which maximum orders were placed
 Ans:  select productcode, sum(quantityordered) as total_order from sales_order_orc group by productcode order by total_order desc limit 1;
 
 c. Calculate the total sales for each quarter
-Ans: select qtr_id,sum(sales) as sales from sales_order_orc group by qtr_id;
+Ans: select qtr_id,year_id,sum(sales) as sales from sales_order_orc group by qtr_id,year_id;
 
 d. In which quarter sales was minimum
 Ans: select qtr_id,sum(sales) as sales from sales_order_orc group by qtr_id order by sales limit 1;
