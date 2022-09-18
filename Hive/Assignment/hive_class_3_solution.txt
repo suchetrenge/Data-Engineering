@@ -101,7 +101,7 @@ a. Calculatye total sales per year
 Ans: select year_id,sum(sales) as sales from sales_order_orc group by year_id;
 
 b. Find a product for which maximum orders were placed
-Ans: select productcode, sum(quantityordered) as total_order from sales_order_orc group by productcode order by total_order desc;
+Ans:  select productcode, sum(quantityordered) as total_order from sales_order_orc group by productcode order by total_order desc limit 1;
 
 c. Calculate the total sales for each quarter
 Ans: select qtr_id,sum(sales) as sales from sales_order_orc group by qtr_id;
