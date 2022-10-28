@@ -1,0 +1,137 @@
+
+This is a real time dataset of the ineuron technical consultant team. You have to perform hive analysis on this given dataset.
+
+Download Dataset 1 - https://drive.google.com/file/d/1WrG-9qv6atP-W3P_-gYln1hHyFKRKMHP/view
+
+Download Dataset 2 - https://drive.google.com/file/d/1-JIPCZ34dyN6k9CqJa-Y8yxIGq6vTVXU/view
+
+Note: both files are csv files. 
+
+
+1. Create a schema based on the given dataset
+Ans: 
+
+creating temporary table before parding date and timestamp
+-----------------------------------------------------------
+create external table agentlogin_temp(
+slno int,
+agent string,
+date string,
+login_time string,
+logout_time string,
+duration string
+)
+row format delimited
+fields terminated by ","
+location "/user/cloudera/temp_data/agentlogin"
+tblproperties ("skip.header.line.count"="1");
+
+# For Performance Table
+---------------------------
+create external table agentperformance_temp(
+slno int,
+date string,
+agent string,
+total_chats int,
+response_time string,
+resolution_time string,
+rating float,
+feedback int
+)
+row format delimited
+fields terminated by ","
+location "/user/cloudera/temp_data/agentperformance"
+tblproperties ("skip.header.line.count"="1");
+
+
+creating table for parsed date and timestamp
+-----------------------------------------------------------
+create external table agentlogin(
+slno int,
+agent string,
+date date,
+login_time timestamp,
+logout_time timestamp,
+duration timestamp
+)
+row format delimited
+fields terminated by ",";
+
+# For Performance Table
+---------------------------
+create external table agentperformance(
+slno int,
+date date,
+agent string,
+total_chats int,
+response_time timestamp,
+resolution_time timestamp,
+rating float,
+feedback int
+)
+row format delimited
+fields terminated by ",";
+
+use hive_class;
+
+# Adding UDF JAR for parsing date and timestamp
+add jar /home/cloudera/Downloads/ineuron/hive/jars/hive_date.jar;
+
+
+# Creating temporary functions for date and timestamp
+create temporary function udf_date as 'HiveUDFPackage.HiveDateParsing';
+
+create temporary function udf_time as 'HiveUDFPackage.HiveTimeParsing';
+
+# For Performance Table
+---------------------------
+create temporary function udf_performance_date as 'HiveUDFPackage.HiveDateParsing_Performance';
+
+create temporary function udf_performance_time as 'HiveUDFPackage.HiveTimeParsing_Performance';
+
+2. Dump the data inside the hdfs in the given schema location.
+Ans:
+
+# Inserting data from temporary table to Parsed table
+insert into agentlogin select slno,agent,udf_date(date),udf_time(date,login_time),udf_time(date,logout_time),udf_time(date,duration) from agentlogin_temp;
+
+# For Performance Table
+---------------------------
+insert into agentperformance select slno,udf_performance_date(date),agent,total_chats,udf_performance_time(date,response_time),udf_performance_time(date,resolution_time),rating,feedback from agentperformance_temp;
+
+3. List of all agents' names. 
+Ans : select agent from agentlogin_parsed;
+
+
+4. Find out agent average rating.
+5. Total working days for each agents 
+6. Total query that each agent have taken 
+7. Total Feedback that each agent have received 
+8. Agent name who have average rating between 3.5 to 4 
+9. Agent name who have rating less than 3.5 
+10. Agent name who have rating more than 4.5 
+11. How many feedback agents have received more than 4.5 average
+12. average weekly response time for each agent 
+13. average weekly resolution time for each agents 
+14. Find the number of chat on which they have received a feedback 
+15. Total contribution hour for each and every agents weekly basis 
+16. Perform inner join, left join and right join based on the agent column and after joining the table export that data into your local system.
+17. Perform partitioning on top of the agent column and then on top of that perform bucketing for each partitioning.
+
+--------------------------------------------------------------------------------------------
+
+create table agentlogin_string(
+date date,
+login_time timestamp
+)
+row format delimited
+fields terminated by ","
+tblproperties ("skip.header.line.count"="1");
+
+use hive_class;
+
+add jar /home/cloudera/Downloads/ineuron/hive/jars/hive_date.jar;
+
+create temporary function udf_date as 'HiveUDFPackage.HiveDateParsing';
+
+insert into agentlogin_string select udf_performance_date(date),udf_performance_time(date,response_time) from agentperformance_temp;
