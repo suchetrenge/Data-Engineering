@@ -11,7 +11,7 @@ Note: both files are csv files.
 1. Create a schema based on the given dataset
 Ans: 
 
-creating temporary table before parding date and timestamp
+# creating temporary table before parding date and timestamp
 -----------------------------------------------------------
 create external table agentlogin_temp(
 slno int,
@@ -44,9 +44,9 @@ location "/user/cloudera/temp_data/agentperformance"
 tblproperties ("skip.header.line.count"="1");
 
 
-creating table for parsed date and timestamp
+# creating table for parsed date and timestamp
 -----------------------------------------------------------
-create external table agentlogin(
+create table agentlogin(
 slno int,
 agent string,
 date date,
@@ -59,7 +59,7 @@ fields terminated by ",";
 
 # For Performance Table
 ---------------------------
-create external table agentperformance(
+create table agentperformance(
 slno int,
 date date,
 agent string,
@@ -100,38 +100,112 @@ insert into agentlogin select slno,agent,udf_date(date),udf_time(date,login_time
 insert into agentperformance select slno,udf_performance_date(date),agent,total_chats,udf_performance_time(date,response_time),udf_performance_time(date,resolution_time),rating,feedback from agentperformance_temp;
 
 3. List of all agents' names. 
-Ans : select agent from agentlogin_parsed;
+Ans : select agent from agentlogin;
 
 
 4. Find out agent average rating.
+Ans: select avg(rating) as Average_Rating from agentperformance;
+
+
 5. Total working days for each agents 
+Ans: select agent,count(*) from agentlogin group by agent;
+
+
 6. Total query that each agent have taken 
+Ans: select agent,sum(total_chats) from agentperformance group by agent;
+
+
 7. Total Feedback that each agent have received 
+Ans: select agent,sum(feedback) from agentperformance group by agent;
+
+
 8. Agent name who have average rating between 3.5 to 4 
+Ans: select agent,avg(rating) as avg_rating from agentperformance group by agent having avg(rating) >= 3.5 and avg(rating) <= 4;
+
+
 9. Agent name who have rating less than 3.5 
+Ans : select agent,rating from agentperformance where rating < 3.5;
+
+
 10. Agent name who have rating more than 4.5 
+Ans : select agent,rating from agentperformance where rating > 4.5;
+
+
 11. How many feedback agents have received more than 4.5 average
-12. average weekly response time for each agent 
+Ans : select count(*) from agentperformance group by agent having avg(rating) > 4.5;
+
+
+12. average weekly response time for each agent
+Ans: select agent,avg(response_time)/7 as weekly_response_time from agentperformance group by agent;
+
+ 
 13. average weekly resolution time for each agents 
+Ans: select agent,avg(resolution_time)/7 as weekly_resolution_time from agentperformance group by agent;
+
+
 14. Find the number of chat on which they have received a feedback 
+Ans: select sum(feedback) as total_feedback from agentperformance;
+
+
 15. Total contribution hour for each and every agents weekly basis 
+Ans: select agent, hour(duration) from agentlogin;
+
+
 16. Perform inner join, left join and right join based on the agent column and after joining the table export that data into your local system.
+Ans: 
+Inner Join:
+-------------
+INSERT OVERWRITE LOCAL DIRECTORY '/tmp/export' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' select distinct(agentlogin.agent) from agentlogin join agentperformance on agentlogin.agent = agentperformance.agent;
+
+Left Outer Join:
+-------------
+INSERT OVERWRITE LOCAL DIRECTORY '/tmp/export' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' select distinct(agentlogin.agent) from agentlogin left outer join agentperformance on agentlogin.agent = agentperformance.agent;
+
+Right Outer Join:
+-------------
+INSERT OVERWRITE LOCAL DIRECTORY '/tmp/export' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' select distinct(agentlogin.agent) from agentlogin right outer join agentperformance on agentlogin.agent = agentperformance.agent;
+
+
+
 17. Perform partitioning on top of the agent column and then on top of that perform bucketing for each partitioning.
-
---------------------------------------------------------------------------------------------
-
-create table agentlogin_string(
+Ans: 
+New Partition Table:
+----------------------
+create table agtloginpart(
+slno int,
 date date,
-login_time timestamp
+login_time timestamp,
+logout_time timestamp,
+duration timestamp
 )
+partitioned by (agent string)
 row format delimited
-fields terminated by ","
-tblproperties ("skip.header.line.count"="1");
+fields terminated by ",";
 
-use hive_class;
+SET hive.exec.dynamic.partition=true;
+SET hive.exec.dynamic.partition.mode=nonstrict;
 
-add jar /home/cloudera/Downloads/ineuron/hive/jars/hive_date.jar;
+insert into table agtloginpart partition(agent) select * from agentlogin;
 
-create temporary function udf_date as 'HiveUDFPackage.HiveDateParsing';
+Partition and Bucketing:
+-------------------------
+Bucketing on date column
 
-insert into agentlogin_string select udf_performance_date(date),udf_performance_time(date,response_time) from agentperformance_temp;
+create table agtloginpartbuck(
+slno int,
+date date,
+login_time timestamp,
+logout_time timestamp,
+duration timestamp
+)
+partitioned by (agent string)
+clustered by (date) into 4 buckets
+row format delimited
+fields terminated by ",";
+
+SET hive.exec.dynamic.partition=true;
+SET hive.exec.dynamic.partition.mode=nonstrict;
+SET hive.enforce.bucketing=true;
+
+insert into table agtloginpartbuck partition(agent) select * from agentlogin;
+
