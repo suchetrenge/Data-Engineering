@@ -31,7 +31,6 @@ from typing import List
 
 
 FILE_PATH = "D:\\Study\\iNeuron\\Data Engineer\\4.Kafka\\Assignment\\restaurant_orders.csv"
-# FILE_PATH = "D:\\Study\\iNeuron\\Data Engineer\\4.Kafka\\Assignment\\demo.csv"
 columns=["Order Number","Order Date","Item Name","Quantity","Product Price","Total products"]
 
 API_KEY = 'QMAPGRKKRYOJSF74'
