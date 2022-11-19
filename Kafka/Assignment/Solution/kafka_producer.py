@@ -124,7 +124,6 @@ def main(topic):
     schema_registry_conf = schema_config()
     schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
-    # print("get latest version : ",schema_registry_client.get_latest_version("test-topic-1-value").schema.schema_str)
     schema_str = schema_registry_client.get_latest_version("restaurent-take-away-data-value").schema.schema_str
     string_serializer = StringSerializer('utf_8')
     json_serializer = JSONSerializer(schema_str, schema_registry_client, order_to_dict)
@@ -132,8 +131,7 @@ def main(topic):
     producer = Producer(sasl_conf())
 
     print("Producing user records to topic {}. ^C to exit.".format(topic))
-    #while True:
-        # Serve on_delivery callbacks from previous calls to produce()
+
     producer.poll(0.0)
     try:
         for order in get_order_instance(file_path=FILE_PATH):
