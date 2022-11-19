@@ -89,7 +89,7 @@ def main(topic):
             except KeyboardInterrupt:
                 break
 
-    print("Record Consumed by 2nd consumer : ", record_consumed)
+    print("Record Consumed : ", record_consumed)
     consumer.close()
 
 main("restaurent-take-away-data")
