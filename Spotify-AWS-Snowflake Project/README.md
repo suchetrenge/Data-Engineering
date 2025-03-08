@@ -6,7 +6,7 @@ This project implements an ETL (Extract, Transform, Load) pipeline using AWS ser
 ## Architecture Diagram
 Below is the architectural workflow of the project:
 
-![ETL Architecture](image.png)
+![ETL Architecture](images/architecture.png)
 
 ## Workflow Breakdown
 
