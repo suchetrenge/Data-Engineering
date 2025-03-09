@@ -8,6 +8,7 @@ from awsglue.job import Job
 from pyspark.sql.functions import explode,col, to_date
 from datetime import datetime
 from awsglue.dynamicframe import DynamicFrame
+import boto3
 
 sc = SparkContext.getOrCreate()
 glueContext = GlueContext(sc)
@@ -69,7 +70,7 @@ def write_to_s3(df, path_suffix, format_type="csv"):
     # Convert back to DynamicFrame
     dynamic_frame = DynamicFrame.fromDF(df, glueContext, "dynamic_frame")
     
-    glueContext.write_dynamic_frame.from_options(
+    glueContext.write_dynamic_frame.from_options(n
         frame = dynamic_frame,
         connection_type = "s3",
         connection_options = {"path": f"s3://aws-de-s3-bucket-1807/transformed/{path_suffix}/"},
@@ -79,5 +80,34 @@ def write_to_s3(df, path_suffix, format_type="csv"):
 write_to_s3(df_album, "album/album_transformed_{}".format(datetime.now().strftime("%Y-%m-%d")), "csv")
 write_to_s3(df_songs, "songs/songs_transformed_{}".format(datetime.now().strftime("%Y-%m-%d")), "csv")
 write_to_s3(df_artists, "artist/artist_transformed_{}".format(datetime.now().strftime("%Y-%m-%d")), "csv")
-datetime.now().strftime("%Y-%m-%d")
+
+
+# Function to get the list of JSON files from the specified S3 bucket and prefix
+def get_json_files_list():
+    Bucket = "aws-de-s3-bucket-1807"
+    Key = "raw/to_process"
+    json_files = client.list_objects_v2(Bucket=Bucket, Prefix=Key)
+    
+    data = [i for i in json_files['Contents']]
+    json_files = [i['Key'] for i in data if str(i['Key']).endswith('.json')]
+    return json_files
+
+# Function to copy JSON files to the 'processed' folder and delete the original files
+def copy_and_delete_keys(json_files):
+    for key in json_files:
+        copy_source = {
+            'Bucket': 'aws-de-s3-bucket-1807',
+            'Key': key
+        }
+        destination_key = "raw" + "/" + "processed" + "/" + key.split('/')[-1]
+        client.copy(copy_source, 'aws-de-s3-bucket-1807', destination_key)
+        client.delete_object(Bucket='aws-de-s3-bucket-1807', Key=key)
+
+# Initialize the S3 client
+client = boto3.client('s3')
+
+# Get the list of JSON files and process them
+json_files = get_json_files_list()
+copy_and_delete_keys(json_files=json_files)
+
 job.commit()
